@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.route("/").post(authenticateUser, BranchController.createBranch);
 
-router.route("/").get(authenticateUser, BranchController.getAllBranches);
+router.route("/").get( BranchController.getAllBranches);
 
 router.route("/:id").delete(authenticateUser, BranchController.deleteBranch);
 
