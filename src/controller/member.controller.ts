@@ -460,6 +460,10 @@ class MemberController {
       const skip = (page - 1) * limit;
 
       const { familyBranch, familyRelationship } = req.query;
+      const filter: Record<string, any> = {};
+
+      if (familyBranch) {
+        filter.familyBranch = familyBranch;
       const existingFamilyBranch = await Branch.findOne({ _id: familyBranch });
       if (!existingFamilyBranch) {
         return next(
@@ -470,10 +474,6 @@ class MemberController {
         );
       }
 
-      const filter: Record<string, any> = {};
-
-      if (familyBranch) {
-        filter.familyBranch = familyBranch;
       }
 
       if (familyRelationship) {
