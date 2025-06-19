@@ -549,44 +549,67 @@ class UserController {
     }
   );
 
-  swapMember = asyncWrapper(
-    async (req: Request, res: Response, next: NextFunction) => {
-      const { userId } = req.params;
-      const { newMemberId } = req.body;
+swapMember = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req.params;
+    const { newMemberId } = req.body;
 
-      const user = await User.findById(userId);
-      if (!user) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const targetUser = await User.findById(userId).session(session);
+      if (!targetUser) {
+        await session.abortTransaction();
         return next(createCustomError("User not found", HttpCode.NOT_FOUND));
       }
 
-      const newMember = await Member.findById(newMemberId);
+      const newMember = await Member.findById(newMemberId).session(session);
       if (!newMember) {
-        return next(createCustomError("Member not found", HttpCode.NOT_FOUND));
+        await session.abortTransaction();
+        return next(createCustomError("New member not found", HttpCode.NOT_FOUND));
       }
 
-      const currentMemberId = user.memberId;
-
-      if (currentMemberId) {
-        await Member.findByIdAndDelete(currentMemberId);
+      if (newMember.userId) {
+        const previousUser = await User.findById(newMember.userId).session(session);
+        if (previousUser) {
+          previousUser.memberId = null;
+          await previousUser.save({ session });
+        }
       }
 
-      user.memberId = newMember._id;
-      await user.save();
+      if (targetUser.memberId) {
+        await Member.findByIdAndDelete(targetUser.memberId).session(session);
+      }
 
-      newMember.userId = user._id;
+      newMember.userId = targetUser._id;
       newMember.isUser = true;
-      await newMember.save();
+      await newMember.save({ session });
+
+      targetUser.memberId = newMember._id;
+      await targetUser.save({ session });
+
+      await session.commitTransaction();
 
       res.status(HttpCode.OK).json({
         success: true,
         data: {
-          user,
+          user: targetUser,
           newMember,
+          deletedOldMember: targetUser.memberId ? true : false,
+          disassociatedPreviousUser: newMember.userId ? true : false
         },
-        message: "Member swapped successfully and old member deleted",
+        message: "Member swapped successfully. Old member deleted and new member associated."
       });
+
+    } catch (error) {
+      await session.abortTransaction();
+      next(error);
+    } finally {
+      session.endSession();
     }
-  );
+  }
+);
 }
 
 export default new UserController();
