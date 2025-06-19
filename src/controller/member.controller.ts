@@ -40,7 +40,7 @@ class MemberController {
         );
       }
 
-      const existingFamilyBranch = await Branch.findOne({ familyBranch });
+      const existingFamilyBranch = await Branch.findOne({ _id: familyBranch });
       if (!existingFamilyBranch) {
         return next(
           createCustomError(
@@ -67,7 +67,6 @@ class MemberController {
       // check for only one grandfather
       if (familyRelationship === "الجد الأعلى") {
         const existingHead = await Member.findOne({
-          familyBranch,
           familyRelationship: "الجد الأعلى",
         });
 
@@ -291,7 +290,7 @@ class MemberController {
         return next(createCustomError("Member not found", HttpCode.NOT_FOUND));
       }
 
-      const existingFamilyBranch = await Branch.findOne({ familyBranch });
+      const existingFamilyBranch = await Branch.findOne({ _id: familyBranch });
       if (!existingFamilyBranch) {
         return next(
           createCustomError(
@@ -305,12 +304,33 @@ class MemberController {
         req.body.image = req.file.path.replace(/\\/g, "/");
       }
 
-      if (familyRelationship === "زوج" && member.familyRelationship !== "زوج") {
-        const existingHead = await Member.findOne({
-          familyBranch,
-          familyRelationship: "زوج",
-          _id: { $ne: member._id },
+      //check for unique fullname
+      if (fname || lname) {
+        const fullName = `${fname || member.fname} ${lname || member.lname}`;
+        const existingMember = await Member.findOne({
+          fullName,
+          _id: { $ne: id },
         });
+        if (existingMember) {
+          return next(
+            createCustomError(
+              `يوجد بالفعل عضو باسم '${fullName}'. يرجى اسم اضافى لتمييز فريد مثل '${fullName} 1'.`,
+              HttpCode.BAD_REQUEST
+            )
+          );
+        }
+        req.body.fullName = fullName;
+      }
+
+      //check only one head for the family
+      if (
+        familyRelationship === "الجد الأعلى" &&
+        member.familyRelationship !== "الجد الأعلى"
+      ) {
+        const existingHead = await Member.findOne({
+          familyRelationship: "الجد الأعلى",
+        });
+
         if (existingHead) {
           return next(
             createCustomError(
@@ -321,61 +341,93 @@ class MemberController {
         }
       }
 
-      if (husband) {
-        const husbandMember = await Member.findById(husband);
-        if (!husbandMember) {
-          return next(
-            createCustomError("Husband not found", HttpCode.BAD_REQUEST)
+      //handle wives update
+      if (wives !== undefined && Array.isArray(wives) && wives.length > 0) {
+        await Member.updateMany(
+          { _id: { $in: member.wives } },
+          { $unset: { husband: "" } }
+        );
+        if (wives.length > 0) {
+          const wifeMembers = await Member.find({ _id: { $in: wives } });
+          if (
+            wifeMembers.length !== wives.length ||
+            wifeMembers.some((w) => w.gender !== "أنثى")
+          ) {
+            throw createCustomError(
+              "All wives must be female and exist.",
+              HttpCode.BAD_REQUEST
+            );
+          }
+          await Member.updateMany(
+            { _id: { $in: wives } },
+            { $set: { husband: member._id } }
           );
         }
       }
 
-      if (parents?.father || parents?.mother) {
-        req.body.parents = {};
-        if (parents.father && mongoose.Types.ObjectId.isValid(parents.father)) {
-          req.body.parents.father = parents.father;
+      // Handle husband update
+      if (husband !== undefined) {
+        const husbandMember = await Member.findById(husband);
+        if (
+          !husbandMember ||
+          husbandMember.gender !== "ذكر" ||
+          husbandMember.familyBranch !== member.familyBranch
+        ) {
+          throw createCustomError(
+            "Invalid husband relationship.",
+            HttpCode.BAD_REQUEST
+          );
         }
-        if (parents.mother && mongoose.Types.ObjectId.isValid(parents.mother)) {
-          req.body.parents.mother = parents.mother;
+        await Member.findByIdAndUpdate(husband, {
+          $addToSet: { wives: member._id },
+        });
+      }
+
+      // Handle parents update
+      if (parents !== undefined) {
+        if (parents.father) {
+          await Member.findByIdAndUpdate(parents.father, {
+            $addToSet: { children: member._id },
+          });
+        }
+        if (parents.mother) {
+          await Member.findByIdAndUpdate(parents.mother, {
+            $addToSet: { children: member._id },
+          });
         }
       }
 
-      let updatedMember;
-      if (
-        children &&
-        typeof children === "string" &&
-        mongoose.Types.ObjectId.isValid(children)
-      ) {
-        updatedMember = await Member.findByIdAndUpdate(
-          id,
-          {
-            $addToSet: { children },
-            $set: req.body,
-          },
-          { new: true, runValidators: true }
-        )
-          .populate("userId")
-          .populate("husband")
-          .populate("wives")
-          .populate("parents.father")
-          .populate("parents.mother")
-          .populate("parents")
-          .populate("children")
-          .populate("familyBranch");
-      } else {
-        updatedMember = await Member.findByIdAndUpdate(id, req.body, {
-          new: true,
-          runValidators: true,
-        })
-          .populate("userId")
-          .populate("husband")
-          .populate("wives")
-          .populate("parents.father")
-          .populate("parents.mother")
-          .populate("parents")
-          .populate("children")
-          .populate("familyBranch");
+      // Handle children update
+      if (children !== undefined) {
+        await Member.updateMany(
+          { _id: { $in: member.children } },
+          { $unset: { "parents.father": "", "parents.mother": "" } }
+        );
+        for (const childId of children) {
+          await Member.findByIdAndUpdate(
+            childId,
+            {
+              $set: {
+                [`parents.${member.gender === "ذكر" ? "father" : "mother"}`]:
+                  member._id,
+              },
+            },
+            { new: true }
+          );
+        }
       }
+
+      const updatedMember = await Member.findByIdAndUpdate(id, req.body, {
+        new: true,
+        runValidators: true,
+      })
+        .populate("userId")
+        .populate("husband")
+        .populate("wives")
+        .populate("parents.father")
+        .populate("parents.mother")
+        .populate("children")
+        .populate("familyBranch");
 
       await notifyUsersWithPermission(
         { entity: "عضو", action: "update", value: true },
@@ -408,7 +460,7 @@ class MemberController {
       const skip = (page - 1) * limit;
 
       const { familyBranch, familyRelationship } = req.query;
-      const existingFamilyBranch = await Branch.findOne({ familyBranch });
+      const existingFamilyBranch = await Branch.findOne({ _id: familyBranch });
       if (!existingFamilyBranch) {
         return next(
           createCustomError(
