@@ -549,64 +549,55 @@ class UserController {
     }
   );
 
-swapMember = asyncWrapper(
+
+  swapMember = asyncWrapper(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req.params;
     const { newMemberId } = req.body;
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
-      const targetUser = await User.findById(userId).session(session);
+      const targetUser = await User.findById(userId);
       if (!targetUser) {
-        await session.abortTransaction();
         return next(createCustomError("User not found", HttpCode.NOT_FOUND));
       }
 
-      const newMember = await Member.findById(newMemberId).session(session);
+      const newMember = await Member.findById(newMemberId);
       if (!newMember) {
-        await session.abortTransaction();
         return next(createCustomError("New member not found", HttpCode.NOT_FOUND));
       }
 
       if (newMember.userId) {
-        const previousUser = await User.findById(newMember.userId).session(session);
+        const previousUser = await User.findById(newMember.userId);
         if (previousUser) {
           previousUser.memberId = null;
-          await previousUser.save({ session });
+          await previousUser.save();
         }
       }
 
       if (targetUser.memberId) {
-        await Member.findByIdAndDelete(targetUser.memberId).session(session);
+        await Member.findByIdAndDelete(targetUser.memberId);
       }
 
       newMember.userId = targetUser._id;
       newMember.isUser = true;
-      await newMember.save({ session });
+      await newMember.save();
 
       targetUser.memberId = newMember._id;
-      await targetUser.save({ session });
-
-      await session.commitTransaction();
+      await targetUser.save();
 
       res.status(HttpCode.OK).json({
         success: true,
         data: {
           user: targetUser,
           newMember,
-          deletedOldMember: targetUser.memberId ? true : false,
-          disassociatedPreviousUser: newMember.userId ? true : false
+          deletedOldMember: !!targetUser.memberId,
+          disassociatedPreviousUser: !!newMember.userId
         },
-        message: "Member swapped successfully. Old member deleted and new member associated."
+        message: "Member swapped successfully"
       });
 
     } catch (error) {
-      await session.abortTransaction();
       next(error);
-    } finally {
-      session.endSession();
     }
   }
 );
