@@ -139,7 +139,7 @@ class MemberController {
             createCustomError("Husband must be male", HttpCode.BAD_REQUEST)
           );
         }
-        if (husbandMember.familyBranch._id !== familyBranch) {
+        if (husbandMember.familyBranch !== familyBranch) {
           await Member.findByIdAndDelete(member._id);
           return next(
             createCustomError(
