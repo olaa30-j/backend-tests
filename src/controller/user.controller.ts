@@ -566,16 +566,16 @@ class UserController {
 
       const currentMemberId = user.memberId;
 
+      if (currentMemberId) {
+        await Member.findByIdAndDelete(currentMemberId);
+      }
+
       user.memberId = newMember._id;
       await user.save();
 
       newMember.userId = user._id;
       newMember.isUser = true;
       await newMember.save();
-
-      if (currentMemberId) {
-        await Member.findByIdAndDelete(currentMemberId);
-      }
 
       res.status(HttpCode.OK).json({
         success: true,
