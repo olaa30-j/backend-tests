@@ -49,6 +49,11 @@ class BranchController {
     const totalBranches = await Branch.countDocuments();
     const branches = await Branch.find()
       .select("-__v -createdAt -updatedAt")
+          .populate({
+      path: 'branchOwner',  
+      select: 'fname lname familyRelationship gender image', 
+      options: { sort: { createdAt: -1 } }  
+    })
       .skip(skip)
       .limit(limit);
 
@@ -75,7 +80,12 @@ class BranchController {
         );
       }
 
-      const branch = await Branch.findById(id);
+      const branch = await Branch.findById(id).populate({
+      path: 'branchOwner',  
+      select: 'fname lname familyRelationship gender image', 
+      options: { sort: { createdAt: -1 } }  
+    })
+;
       if (!branch) {
         return next(createCustomError("Branch not found", HttpCode.NOT_FOUND));
       }
