@@ -371,7 +371,7 @@ class MemberController {
         if (
           !husbandMember ||
           husbandMember.gender !== "ذكر" ||
-          husbandMember.familyBranch._id !== member.familyBranch._id
+          husbandMember.familyBranch.toString() !== familyBranch.toString()
         ) {
           throw createCustomError(
             "Invalid husband relationship.",
