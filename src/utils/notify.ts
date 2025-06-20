@@ -32,7 +32,6 @@ export async function notifyUsersWithPermission(
 
     console.log("Found users:", usersWithPermission);
 
-    console.log(usersWithPermission);
     if (usersWithPermission.length === 0) {
       console.log("No users found with permission:", permissionFilter);
       await session.commitTransaction();
@@ -40,11 +39,12 @@ export async function notifyUsersWithPermission(
     }
 
     const existingNotifications = await Notification.find({
-      "entity.type": notificationData.entity,
+      "entity.type": notificationData.entity.type,
     })
       .select("show")
       .session(session);
 
+    console.log(existingNotifications);
     let firstShowStatus: boolean | undefined = false;
     if (existingNotifications.length !== 0) {
       firstShowStatus = existingNotifications[0].show;
@@ -56,7 +56,7 @@ export async function notifyUsersWithPermission(
         recipientId: user._id,
         status: "sent",
         isWebDelivered: true,
-        show: firstShowStatus,
+        show: firstShowStatus !== undefined ? firstShowStatus : false,
       })),
       { session }
     );
@@ -65,6 +65,7 @@ export async function notifyUsersWithPermission(
     await session.commitTransaction();
     return notifications;
   } catch (error) {
+    console.log(error);
     await session.abortTransaction();
     throw error;
   } finally {
