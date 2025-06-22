@@ -339,6 +339,10 @@ class UserController {
         updateData.permissions = permission?.permissions;
       }
 
+      if(req.body.password)
+        updateData.password = await hashPassword(req.body.password);
+      }
+
       const updatedUser = await User.findByIdAndUpdate(id, updateData, {
         new: true,
         runValidators: true,
