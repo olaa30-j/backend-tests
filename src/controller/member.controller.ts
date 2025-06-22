@@ -371,7 +371,8 @@ class MemberController {
         if (
           !husbandMember ||
           husbandMember.gender !== "ذكر" ||
-          husbandMember.familyBranch.toString() !== familyBranch.toString()
+          husbandMember.familyBranch.toString() !==
+            member.familyBranch.toString()
         ) {
           throw createCustomError(
             "Invalid husband relationship.",
@@ -385,12 +386,31 @@ class MemberController {
 
       // Handle parents update
       if (parents !== undefined) {
+        //update for father
         if (parents.father) {
+          // 1. Remove member as child from old father
+          const oldFather = member?.parents?.father;
+          if (oldFather) {
+            await Member.findByIdAndUpdate(oldFather, {
+              $pull: { children: member._id },
+            });
+          }
+          // 2. Add member as child to new father
           await Member.findByIdAndUpdate(parents.father, {
             $addToSet: { children: member._id },
           });
         }
+
+        //update for mother
         if (parents.mother) {
+          // 1. Remove member as child from old mother
+          const oldMother = member?.parents?.mother;
+          if (oldMother) {
+            await Member.findByIdAndUpdate(oldMother, {
+              $pull: { children: member._id },
+            });
+          }
+          // 2. Add member as child to new mother
           await Member.findByIdAndUpdate(parents.mother, {
             $addToSet: { children: member._id },
           });
@@ -399,10 +419,6 @@ class MemberController {
 
       // Handle children update
       if (children !== undefined) {
-        await Member.updateMany(
-          { _id: { $in: member.children } },
-          { $unset: { "parents.father": "", "parents.mother": "" } }
-        );
         for (const childId of children) {
           await Member.findByIdAndUpdate(
             childId,
