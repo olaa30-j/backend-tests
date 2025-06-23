@@ -100,6 +100,9 @@ class AuthController {
       await newMember.save();
       await sendWelcomeEmail(newUser);
 
+      newUser.memberId = newMember._id;
+      await newUser.save();
+
       await notifyUsersWithPermission(
         { entity: "مستخدم", action: "view", value: true },
         {
