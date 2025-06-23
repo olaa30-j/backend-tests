@@ -106,7 +106,7 @@ class UserController {
 
       try {
         await notifyUsersWithPermission(
-          { entity: "مستخدم", action: "view", value: true },
+          { entity: "مستخدم", action: "create", value: true },
           {
             sender: { id: req?.user?.id, name: email.split("@")[0] },
             message: "تم إنشاء مستخدم جديد",
@@ -357,7 +357,7 @@ if (req.body.password) {
       }
 
       await notifyUsersWithPermission(
-        { entity: "مستخدم", action: "update", value: true },
+        { entity: "مستخدم", action: "create", value: true },
         {
           sender: { id: req?.user.id },
           message: "تم تعديل مستخدم",
