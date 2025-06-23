@@ -247,7 +247,7 @@ class MemberController {
       }
 
       await notifyUsersWithPermission(
-        { entity: "عضو", action: "view", value: true },
+        { entity: "عضو", action: "create", value: true },
         {
           sender: { id: req?.user.id },
           message: "تم إنشاءعضو جديد",
@@ -446,7 +446,7 @@ class MemberController {
         .populate("familyBranch");
 
       await notifyUsersWithPermission(
-        { entity: "عضو", action: "update", value: true },
+        { entity: "عضو", action: "create", value: true },
         {
           sender: { id: req?.user.id },
           message: "تم تعديل عضو",
