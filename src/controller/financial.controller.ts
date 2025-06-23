@@ -38,7 +38,7 @@ class TransactionController {
       });
 
       await notifyUsersWithPermission(
-        { entity: "ماليه", action: "view", value: true },
+        { entity: "ماليه", action: "create", value: true },
         {
           sender: { id: req?.user.id },
           message: "تم إنشاء تقرير مالي جديد",
@@ -217,7 +217,7 @@ class TransactionController {
       });
 
       await notifyUsersWithPermission(
-        { entity: "ماليه", action: "update", value: true },
+        { entity: "ماليه", action: "create", value: true },
         {
           sender: { id: req?.user.id },
           message: "تم تعديل تقرير مالي",
