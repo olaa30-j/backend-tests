@@ -227,7 +227,7 @@ class AuthController {
 
       await user.save();
 
-      const resetUrl = `https://elsaqr-family-saas-web-app.vercel.app/reset-password/${resetToken}`;
+      const resetUrl = `https://elsaqr-family-saas-web-app-56kk.vercel.app/reset-password/${resetToken}`;
       await sendPasswordResetEmail(user.email, resetUrl);
 
       res.status(HttpCode.OK).json({
