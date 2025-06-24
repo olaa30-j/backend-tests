@@ -553,12 +553,12 @@ if (req.body.password) {
     try {
       const targetUser = await User.findById(userId);
       if (!targetUser) {
-        return next(createCustomError("User not found", HttpCode.NOT_FOUND));
+        return next(createCustomError("المستخدم غير موجود", HttpCode.NOT_FOUND));
       }
 
       const newMember = await Member.findById(newMemberId);
       if (!newMember) {
-        return next(createCustomError("New member not found", HttpCode.NOT_FOUND));
+        return next(createCustomError("العضو غير موجود", HttpCode.NOT_FOUND));
       }
 
       if (newMember.userId) {
@@ -569,7 +569,8 @@ if (req.body.password) {
         }
       }
 
-      if (targetUser.memberId) {
+      let oldMember = await User.findById((targetUser.memberId);
+      if (oldMember.toString() !== newMember.toString()) {
         await Member.findByIdAndDelete(targetUser.memberId);
       }
 
