@@ -8,7 +8,7 @@ import { notifyUsersWithPermission } from "../utils/notify";
 class AdvertisementController {
   createAdvertisement = asyncWrapper(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { title, type, content } = req.body;
+      const { title, type, content, status } = req.body;
       const userId = req.user?.id;
 
       if (!userId) {
@@ -31,6 +31,7 @@ class AdvertisementController {
         title,
         type,
         content,
+        status,
         image,
       });
 
