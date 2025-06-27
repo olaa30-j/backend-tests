@@ -23,24 +23,24 @@ import branchRoute from "./Routes/branch.route";
 const allowedOrigins =
   process.env.NODE_ENV === "production"
     ? [
-        "https://elsaqr-family-saas-web-app-56kk.vercel.app",
-        "https://*.vercel.app",
-        "https://web.postman.co",
-        "http://localhost:5173",
-        "capacitor://localhost",  
+      "https://elsaqr-family-saas-web-app-56kk.vercel.app",
+      "https://*.vercel.app",
+      "https://web.postman.co",
+      "http://localhost:5173",
+      "capacitor://localhost",
       "https://dahmash-family",
-        "http://localhost"        
-      ]
+      "http://localhost"
+    ]
     : [
-        "http://localhost:5173",
-        "https://www.getpostman.com",
-        "http://localhost:3001",
-        "http://localhost:8080",
-        "capacitor://localhost",  
+      "http://localhost:5173",
+      "https://www.getpostman.com",
+      "http://localhost:3001",
+      "http://localhost:8080",
+      "capacitor://localhost",
       "https://dahmash-family",
-        "http://localhost",      
-        undefined
-      ];
+      "http://localhost",
+      undefined
+    ];
 
 const vercelOriginRegex = /^https:\/\/.*\.vercel\.app$/;
 
@@ -53,7 +53,7 @@ app.use(
         allowedOrigins.includes(origin) ||
         (process.env.NODE_ENV === "production" &&
           vercelOriginRegex.test(origin)) ||
-        origin.startsWith("capacitor://");  
+        origin.startsWith("capacitor://");
 
       if (isAllowed) {
         callback(null, true);
@@ -63,7 +63,7 @@ app.use(
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    credentials: true, 
+    credentials: true,
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -75,6 +75,10 @@ app.use(
 );
 
 app.use((req, res, next) => {
+  if (req.headers.origin?.startsWith("capacitor://")) {
+    res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
+  }
+
   res.header("Access-Control-Allow-Credentials", "true");
   next();
 });

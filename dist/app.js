@@ -71,6 +71,10 @@ app.use((0, cors_1.default)({
     exposedHeaders: ["set-cookie"],
 }));
 app.use((req, res, next) => {
+    var _a;
+    if ((_a = req.headers.origin) === null || _a === void 0 ? void 0 : _a.startsWith("capacitor://")) {
+        res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
+    }
     res.header("Access-Control-Allow-Credentials", "true");
     next();
 });
