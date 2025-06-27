@@ -28,6 +28,7 @@ const allowedOrigins =
         "https://web.postman.co",
         "http://localhost:5173",
         "capacitor://localhost",  
+      "https://dahmash-family",
         "http://localhost"        
       ]
     : [
@@ -36,6 +37,7 @@ const allowedOrigins =
         "http://localhost:3001",
         "http://localhost:8080",
         "capacitor://localhost",  
+      "https://dahmash-family",
         "http://localhost",      
         undefined
       ];
