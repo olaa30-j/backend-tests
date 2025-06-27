@@ -21,7 +21,7 @@ export const setCookie = (
   const isCapacitor = req?.headers?.origin?.startsWith("capacitor://");
 
   const defaultOptions: CookieOptions = {
-    httpOnly: true,
+    httpOnly: false,
     secure: isProduction || isCapacitor,
     sameSite: isProduction ? "none" : "lax",
     maxAge: 90 * 24 * 60 * 60 * 1000,  
@@ -40,7 +40,7 @@ export const clearCookie = (
   const isCapacitor = req?.headers?.origin?.startsWith("capacitor://");
 
   res.clearCookie(name, {
-    httpOnly: true,
+    httpOnly: false,
     secure: isProduction || isCapacitor,
     sameSite: isProduction ? "none" : "lax",
     path: "/",  
