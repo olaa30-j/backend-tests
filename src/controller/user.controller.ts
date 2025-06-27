@@ -13,154 +13,164 @@ import Member from "../models/member.model";
 import { notifyUsersWithPermission } from "../utils/notify";
 import Branch from "../models/branch.model";
 
+type AsyncHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<void>;
+
 const DEFAULT_IMAGE_URL =
   "https://res.cloudinary.com/dmhvfuuke/image/upload/v1750092490/avatar_bdtadk.jpg";
 
 class UserController {
   createUser = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const familyName = "Elsaqar";
-
-      let tenant = await Tenant.findOne({ familyName });
-      if (!tenant) {
-        tenant = new Tenant({
-          familyName,
-          slug: familyName.toLowerCase().replace(/\s+/g, "-"),
-        });
-        await tenant.save();
-      }
-
-      const { email, password, phone, role, status, address, familyBranch, familyRelationship } = req.body;
-
-      if (role === "مدير النظام" || (Array.isArray(role) && role.includes("مدير النظام"))) {
-        const existingSuperAdmin = await User.findOne({
-          $or: [
-            { role: "مدير النظام" },
-            { role: { $elemMatch: { $eq: "مدير النظام" } } },
-          ],
-        });
-
-        if (existingSuperAdmin) {
-          return next(createCustomError(
-            "يوجد مدير نظام واحد فقط مسموح به في النظام",
-            HttpCode.CONFLICT
-          ));
-        }
-      }
-
-      if (await User.findOne({ email })) {
-        return next(createCustomError(
-          "البريد الإلكتروني مسجل مسبقاً",
-          HttpCode.BAD_REQUEST
-        ));
-      }
-
-      if (familyRelationship === "الجد الأعلى") {
-        if (await Member.findOne({ familyRelationship: "الجد الأعلى" })) {
-          return next(createCustomError(
-            "يوجد جد أعلى مسجل مسبقاً في النظام",
-            HttpCode.CONFLICT
-          ));
-        }
-      }
-
-      const userRole = role || "مستخدم";
-      const permission = await Permission.findOne({ role: userRole });
-      
-      if (!permission) {
-        return next(createCustomError(
-          "نوع المستخدم غير صحيح",
-          HttpCode.BAD_REQUEST
-        ));
-      }
-
-      const hashedPwd = await hashPassword(password);
-      const user = new User({
-        tenantId: tenant._id,
-        email,
-        password: hashedPwd,
-        phone,
-        permissions: permission.permissions,
-        status: status || "قيد الانتظار",
-        address,
-        role: Array.isArray(req.body.role) ? req.body.role : [req.body.role || "مستخدم"],
-      });
-
-      await user.save();
-
-      const newMember = new Member({
-        userId: user._id,
-        fname: email.split("@")[0],
-        lname: "الدهمش",
-        gender: "ذكر",
-        isUser: true,
-        image: DEFAULT_IMAGE_URL,
-        familyRelationship,
-        familyBranch,
-      });
-
-      await newMember.save();
-      user.memberId = newMember._id;
-      await user.save();
-
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
-        await notifyUsersWithPermission(
-          { entity: "مستخدم", action: "create", value: true },
-          {
-            sender: { id: req?.user?.id, name: email.split("@")[0] },
-            message: "تم إنشاء مستخدم جديد",
-            action: "create",
-            entity: { type: "مستخدم", id: user._id },
-            metadata: { priority: "medium" },
-            status: "sent",
-            read: false,
-            readAt: null,
+        const familyName = "Elsaqar";
+
+        let tenant = await Tenant.findOne({ familyName });
+        if (!tenant) {
+          tenant = new Tenant({
+            familyName,
+            slug: familyName.toLowerCase().replace(/\s+/g, "-"),
+          });
+          await tenant.save();
+        }
+
+        const { email, password, phone, role, status, address, familyBranch, familyRelationship } = req.body;
+
+        if (role === "مدير النظام" || (Array.isArray(role) && role.includes("مدير النظام"))) {
+          const existingSuperAdmin = await User.findOne({
+            $or: [
+              { role: "مدير النظام" },
+              { role: { $elemMatch: { $eq: "مدير النظام" } } },
+            ],
+          });
+
+          if (existingSuperAdmin) {
+            next(createCustomError(
+              "يوجد مدير نظام واحد فقط مسموح به في النظام",
+              HttpCode.CONFLICT
+            ));
+            return;
           }
-        );
+        }
 
-        await sendEmailToUsersWithPermission({
-          entity: "مستخدم",
-          action: "view",
-          subject: "تم إنشاء مستخدم جديد",
-          content: `
-            <h2 style="color: #2F80A2; text-align: center;">تم إضافة مستخدم جديد</h2>
-            <p style="margin: 10px 0;"><strong>${email}</strong>: تم إنشاء حساب جديد بالبريد الإلكتروني</p>
-            <p style="margin: 10px 0;">يرجى تسجيل الدخول للاطلاع على التفاصيل أو مراجعة الحساب.</p>
-          `,
+        if (await User.findOne({ email })) {
+          next(createCustomError(
+            "البريد الإلكتروني مسجل مسبقاً",
+            HttpCode.BAD_REQUEST
+          ));
+          return;
+        }
+
+        if (familyRelationship === "الجد الأعلى") {
+          if (await Member.findOne({ familyRelationship: "الجد الأعلى" })) {
+            next(createCustomError(
+              "يوجد جد أعلى مسجل مسبقاً في النظام",
+              HttpCode.CONFLICT
+            ));
+            return;
+          }
+        }
+
+        const userRole = role || "مستخدم";
+        const permission = await Permission.findOne({ role: userRole });
+
+        if (!permission) {
+          next(createCustomError(
+            "نوع المستخدم غير صحيح",
+            HttpCode.BAD_REQUEST
+          ));
+          return;
+        }
+
+        const hashedPwd = await hashPassword(password);
+        const user = new User({
+          tenantId: tenant._id,
+          email,
+          password: hashedPwd,
+          phone,
+          permissions: permission.permissions,
+          status: status || "قيد الانتظار",
+          address,
+          role: Array.isArray(req.body.role) ? req.body.role : [req.body.role || "مستخدم"],
         });
-      } catch (notificationError) {
-        console.error("Error in notifications:", notificationError);
+
+        await user.save();
+
+        const newMember = new Member({
+          userId: user._id,
+          fname: email.split("@")[0],
+          lname: "الدهمش",
+          gender: "ذكر",
+          isUser: true,
+          image: DEFAULT_IMAGE_URL,
+          familyRelationship,
+          familyBranch,
+        });
+
+        await newMember.save();
+        user.memberId = newMember._id;
+        await user.save();
+
+        try {
+          await notifyUsersWithPermission(
+            { entity: "مستخدم", action: "create", value: true },
+            {
+              sender: { id: req?.user?.id, name: email.split("@")[0] },
+              message: "تم إنشاء مستخدم جديد",
+              action: "create",
+              entity: { type: "مستخدم", id: user._id },
+              metadata: { priority: "medium" },
+              status: "sent",
+              read: false,
+              readAt: null,
+            }
+          );
+
+          await sendEmailToUsersWithPermission({
+            entity: "مستخدم",
+            action: "view",
+            subject: "تم إنشاء مستخدم جديد",
+            content: `
+          <h2 style="color: #2F80A2; text-align: center;">تم إضافة مستخدم جديد</h2>
+          <p style="margin: 10px 0;"><strong>${email}</strong>: تم إنشاء حساب جديد بالبريد الإلكتروني</p>
+          <p style="margin: 10px 0;">يرجى تسجيل الدخول للاطلاع على التفاصيل أو مراجعة الحساب.</p>
+        `,
+          });
+        } catch (notificationError) {
+          console.error("Error in notifications:", notificationError);
+        }
+
+        res.status(HttpCode.CREATED).json({
+          success: true,
+          data: {
+            user: {
+              _id: user._id,
+              email: user.email,
+              role: user.role,
+              status: user.status,
+              memberId: user.memberId,
+            },
+            member: {
+              _id: newMember._id,
+              fname: newMember.fname,
+              lname: newMember.lname,
+            },
+          },
+          message: "تم إنشاء المستخدم بنجاح",
+        });
+
+      } catch (error) {
+        console.error("Error in createUser:", error);
+        next(createCustomError(
+          "حدث خطأ أثناء إنشاء المستخدم",
+          HttpCode.INTERNAL_SERVER_ERROR
+        ));
       }
-
-      return res.status(HttpCode.CREATED).json({
-        success: true,
-        data: {
-          user: {
-            _id: user._id,
-            email: user.email,
-            role: user.role,
-            status: user.status,
-            memberId: user.memberId,
-          },
-          member: {
-            _id: newMember._id,
-            fname: newMember.fname,
-            lname: newMember.lname,
-          },
-        },
-        message: "تم إنشاء المستخدم بنجاح",
-      });
-
-    } catch (error) {
-      console.error("Error in createUser:", error);
-      return next(createCustomError(
-        "حدث خطأ أثناء إنشاء المستخدم",
-        HttpCode.INTERNAL_SERVER_ERROR
-      ));
     }
-  }
-);
+  );
 
   getAllUsers = asyncWrapper(
     async (req: Request, res: Response, next: NextFunction) => {
@@ -339,9 +349,9 @@ class UserController {
         updateData.permissions = permission?.permissions;
       }
 
-if (req.body.password) {
-  updateData.password = await hashPassword(req.body.password);
-}
+      if (req.body.password) {
+        updateData.password = await hashPassword(req.body.password);
+      }
       const updatedUser = await User.findByIdAndUpdate(id, updateData, {
         new: true,
         runValidators: true,
@@ -546,57 +556,49 @@ if (req.body.password) {
 
 
   swapMember = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req.params;
-    const { newMemberId } = req.body;
+    async (req: Request, res: Response, next: NextFunction) => {
+      const { userId } = req.params;
+      const { newMemberId } = req.body;
 
-    try {
-      const targetUser = await User.findById(userId);
-      if (!targetUser) {
-        return next(createCustomError("المستخدم غير موجود", HttpCode.NOT_FOUND));
-      }
-
-      const newMember = await Member.findById(newMemberId);
-      if (!newMember) {
-        return next(createCustomError("العضو غير موجود", HttpCode.NOT_FOUND));
-      }
-
-      if (newMember.userId) {
-        const previousUser = await User.findById(newMember.userId);
-        if (previousUser) {
-          previousUser.memberId = null;
-          await previousUser.save();
+      try {
+        const targetUser = await User.findById(userId);
+        if (!targetUser) {
+          return next(createCustomError("المستخدم غير موجود", HttpCode.NOT_FOUND));
         }
+
+        const newMember = await Member.findById(newMemberId);
+        if (!newMember) {
+          return next(createCustomError("العضو غير موجود", HttpCode.NOT_FOUND));
+        }
+
+        let oldMember = await Member.findById(targetUser.memberId);
+        if (oldMember && oldMember.toString() !== newMember.toString()) {
+          await Member.findByIdAndDelete(targetUser.memberId);
+        }
+
+        newMember.userId = targetUser._id;
+        newMember.isUser = true;
+        await newMember.save();
+
+        targetUser.memberId = newMember._id;
+        await targetUser.save();
+
+        res.status(HttpCode.OK).json({
+          success: true,
+          data: {
+            user: targetUser,
+            newMember,
+            deletedOldMember: !!targetUser.memberId,
+            disassociatedPreviousUser: !!newMember.userId
+          },
+          message: "تم تبديل العضو بنجاح"
+        });
+
+      } catch (error) {
+        next(error);
       }
-
-      let oldMember = await User.findById((targetUser.memberId);
-      if (oldMember.toString() !== newMember.toString()) {
-        await Member.findByIdAndDelete(targetUser.memberId);
-      }
-
-      newMember.userId = targetUser._id;
-      newMember.isUser = true;
-      await newMember.save();
-
-      targetUser.memberId = newMember._id;
-      await targetUser.save();
-
-      res.status(HttpCode.OK).json({
-        success: true,
-        data: {
-          user: targetUser,
-          newMember,
-          deletedOldMember: !!targetUser.memberId,
-          disassociatedPreviousUser: !!newMember.userId
-        },
-        message: "Member swapped successfully"
-      });
-
-    } catch (error) {
-      next(error);
     }
-  }
-);
+  );
 }
 
 export default new UserController();
