@@ -1,4 +1,4 @@
-import { Response, Request } from "express";  
+import { Response, Request } from "express";
 
 interface CookieOptions {
   httpOnly: boolean;
@@ -15,7 +15,7 @@ export const setCookie = (
   name: string,
   value: string | undefined,
   options: Partial<CookieOptions> = {},
-  req?: Request  
+  req?: Request
 ) => {
   const isProduction = process.env.NODE_ENV === "production";
   const isCapacitor = req?.headers?.origin?.startsWith("capacitor://");
@@ -24,9 +24,8 @@ export const setCookie = (
     httpOnly: true,
     secure: isProduction || isCapacitor,
     sameSite: isProduction ? "none" : "lax",
-    maxAge: 90 * 24 * 60 * 60 * 1000,
-    path: "/",
-    domain: isProduction ? ".yourdomain.com" : undefined
+    maxAge: 90 * 24 * 60 * 60 * 1000,  
+    path: "/",  
   };
 
   res.cookie(name, value, { ...defaultOptions, ...options });
@@ -35,7 +34,7 @@ export const setCookie = (
 export const clearCookie = (
   res: Response,
   name: string,
-  req?: Request  
+  req?: Request
 ) => {
   const isProduction = process.env.NODE_ENV === "production";
   const isCapacitor = req?.headers?.origin?.startsWith("capacitor://");
@@ -44,7 +43,6 @@ export const clearCookie = (
     httpOnly: true,
     secure: isProduction || isCapacitor,
     sameSite: isProduction ? "none" : "lax",
-    path: "/",
-    domain: isProduction ? ".yourdomain.com" : undefined
+    path: "/",  
   });
 };
