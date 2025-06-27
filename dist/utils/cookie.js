@@ -16,7 +16,7 @@ const clearCookie = (res, name) => {
     res.clearCookie(name, {
         httpOnly: false,
         secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        sameSite: "none",
         path: "/",
     });
 };

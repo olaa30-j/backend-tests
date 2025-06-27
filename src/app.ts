@@ -44,7 +44,6 @@ const allowedOrigins =
 
 const vercelOriginRegex = /^https:\/\/.*\.vercel\.app$/;
 
-// CORS configuration (تم تعديله لدعم الموبايل)
 app.use(
   cors({
     origin: (origin, callback) => {

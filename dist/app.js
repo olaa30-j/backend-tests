@@ -44,7 +44,6 @@ const allowedOrigins = process.env.NODE_ENV === "production"
         undefined
     ];
 const vercelOriginRegex = /^https:\/\/.*\.vercel\.app$/;
-// CORS configuration (تم تعديله لدعم الموبايل)
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
         if (!origin)
