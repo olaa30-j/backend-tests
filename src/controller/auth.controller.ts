@@ -223,11 +223,11 @@ class AuthController {
         .digest("hex");
 
       user.resetPasswordToken = hashedToken;
-      user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);  
 
       await user.save();
 
-      const resetUrl = `https://elsaqr-family-saas-web-app-56kk.vercel.app/reset-password/${resetToken}`;
+      const resetUrl = `${process.env.RESET_URL}/${resetToken}`;
       await sendPasswordResetEmail(user.email, resetUrl);
 
       res.status(HttpCode.OK).json({

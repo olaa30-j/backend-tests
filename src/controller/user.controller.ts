@@ -13,6 +13,12 @@ import Member from "../models/member.model";
 import { notifyUsersWithPermission } from "../utils/notify";
 import Branch from "../models/branch.model";
 
+type AsyncHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<void>;
+
 const DEFAULT_IMAGE_URL =
   "https://res.cloudinary.com/dmhvfuuke/image/upload/v1750092490/avatar_bdtadk.jpg";
 
@@ -346,7 +352,6 @@ class UserController {
       if (req.body.password) {
         updateData.password = await hashPassword(req.body.password);
       }
-
       const updatedUser = await User.findByIdAndUpdate(id, updateData, {
         new: true,
         runValidators: true,
@@ -594,7 +599,6 @@ class UserController {
       }
     }
   );
-
 }
 
 export default new UserController();

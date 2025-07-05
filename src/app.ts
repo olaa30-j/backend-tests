@@ -23,21 +23,27 @@ import branchRoute from "./Routes/branch.route";
 const allowedOrigins =
   process.env.NODE_ENV === "production"
     ? [
-        "https://elsaqr-family-saas-web-app-56kk.vercel.app",
-        "https://*.vercel.app",
-        "https://web.postman.co",
-        "http://localhost:5173",
-      ]
+      "https://elsaqr-family-saas-web-app-56kk.vercel.app",
+      "https://*.vercel.app",
+      "https://web.postman.co",
+      "http://localhost:5173",
+      "capacitor://localhost",
+      "https://dahmash-family",
+      "http://localhost"
+    ]
     : [
-        "http://localhost:5173",
-        "https://www.getpostman.com",
-        "http://localhost:3001",
-        "http://localhost:8080",
-        undefined,
-      ];
+      "http://localhost:5173",
+      "https://www.getpostman.com",
+      "http://localhost:3001",
+      "http://localhost:8080",
+      "capacitor://localhost",
+      "https://dahmash-family",
+      "http://localhost",
+      undefined
+    ];
+
 const vercelOriginRegex = /^https:\/\/.*\.vercel\.app$/;
 
-// CORS configuration
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -46,7 +52,8 @@ app.use(
       const isAllowed =
         allowedOrigins.includes(origin) ||
         (process.env.NODE_ENV === "production" &&
-          vercelOriginRegex.test(origin));
+          vercelOriginRegex.test(origin)) ||
+        origin.startsWith("capacitor://");
 
       if (isAllowed) {
         callback(null, true);
@@ -61,18 +68,25 @@ app.use(
       "Content-Type",
       "Authorization",
       "X-Requested-With",
-      " x-vercel-project-id",
+      "x-vercel-project-id",
     ],
     exposedHeaders: ["set-cookie"],
   })
 );
 
-// Security middleware
+app.use((req, res, next) => {
+  if (req.headers.origin?.startsWith("capacitor://")) {
+    res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
+  }
+
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
+
 app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 
-// Logger for development
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
@@ -80,7 +94,6 @@ if (process.env.NODE_ENV === "development") {
 // API Documentation
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// API Routes
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/user", userRoute);
 app.use("/api/v1/permission", permissionRoute);
