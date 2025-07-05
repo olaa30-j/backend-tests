@@ -383,17 +383,6 @@ class UserController {
         }
       );
 
-      await sendEmailToUsersWithPermission({
-        entity: "مستخدم",
-        action: "update",
-        subject: "تم إنشاء تعديل مستخدم",
-        content: `
-          <h2 style="color: #2F80A2; text-align: center;">تم تعديل مستخدم</h2>
-          <p style="margin: 10px 0;"> <strong>${updatedUser?.email} : تم تعديل حساب بالبريد الالكتروني </strong></p>
-          <p style="margin: 10px 0;">.يرجى تسجيل الدخول للاطلاع على التفاصيل</p>
-        `,
-      });
-
       res.status(HttpCode.OK).json({
         success: true,
         data: updatedUser,
