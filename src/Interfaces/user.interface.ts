@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 export default interface IUser {
+  fcmToken:string;
   tenantId: Types.ObjectId;
   memberId: Types.ObjectId;
   email: string;

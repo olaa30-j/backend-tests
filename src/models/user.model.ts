@@ -63,6 +63,10 @@ const userSchema = new Schema<IUserDocument>(
     resetPasswordExpires: {
       type: Date,
     },
+    fcmToken: {
+      type: String,
+      default: null
+    }
   },
   { timestamps: true, versionKey: false }
 );

@@ -47,6 +47,10 @@ router
   .patch(authenticateUser, UserController.updatePermissions);
 
 router
+  .route("/:id/fcm-token")
+  .patch(authenticateUser, UserController.updateFcmToken);
+
+router
   .route("/swap-member/:userId")
   .patch(
     authenticateUser,

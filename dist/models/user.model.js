@@ -60,6 +60,10 @@ const userSchema = new mongoose_1.Schema({
     resetPasswordExpires: {
         type: Date,
     },
+    fcmToken: {
+        type: String,
+        default: null
+    }
 }, { timestamps: true, versionKey: false });
 userSchema.methods = {
     addRole: function (role) {

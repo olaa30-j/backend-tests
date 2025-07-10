@@ -588,6 +588,54 @@ class UserController {
       }
     }
   );
+
+  // FCM for send Notification
+  updateFcmToken = asyncWrapper(
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { userId } = req.params;
+        const { fcmToken } = req.body;
+
+
+        if (!fcmToken || typeof fcmToken !== 'string') {
+          return next(createCustomError("Valid FCM token is required", HttpCode.BAD_REQUEST));
+        }
+
+        const user = await User.findByIdAndUpdate(
+          userId,
+          { fcmToken },
+          {
+            new: true,
+            select: '-password'  
+          }
+        );
+
+        if (!user) {
+          return next(createCustomError("User not found", HttpCode.NOT_FOUND));
+        }
+
+
+        res.status(HttpCode.OK).json({
+          success: true,
+          data: {
+            _id: user._id,
+            email: user.email,
+            fcmToken: user.fcmToken,
+          },
+          message: "FCM token updated successfully"
+        });
+
+      } catch (error) {
+        console.error('Error updating FCM token:', error);
+
+
+        next(createCustomError(
+          "Failed to update FCM token",
+          HttpCode.INTERNAL_SERVER_ERROR
+        ));
+      }
+    }
+  )
 }
 
 export default new UserController();

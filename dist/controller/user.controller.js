@@ -283,16 +283,6 @@ class UserController {
                 read: false,
                 readAt: null,
             });
-            yield (0, email_service_1.sendEmailToUsersWithPermission)({
-                entity: "مستخدم",
-                action: "update",
-                subject: "تم إنشاء تعديل مستخدم",
-                content: `
-          <h2 style="color: #2F80A2; text-align: center;">تم تعديل مستخدم</h2>
-          <p style="margin: 10px 0;"> <strong>${updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.email} : تم تعديل حساب بالبريد الالكتروني </strong></p>
-          <p style="margin: 10px 0;">.يرجى تسجيل الدخول للاطلاع على التفاصيل</p>
-        `,
-            });
             res.status(customError_1.HttpCode.OK).json({
                 success: true,
                 data: updatedUser,
@@ -438,6 +428,36 @@ class UserController {
             }
             catch (error) {
                 next(error);
+            }
+        }));
+        // FCM for send Notification
+        this.updateFcmToken = (0, asynHandler_1.default)((req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { userId } = req.params;
+                const { fcmToken } = req.body;
+                if (!fcmToken || typeof fcmToken !== 'string') {
+                    return next((0, customError_1.createCustomError)("Valid FCM token is required", customError_1.HttpCode.BAD_REQUEST));
+                }
+                const user = yield user_model_1.default.findByIdAndUpdate(userId, { fcmToken }, {
+                    new: true,
+                    select: '-password'
+                });
+                if (!user) {
+                    return next((0, customError_1.createCustomError)("User not found", customError_1.HttpCode.NOT_FOUND));
+                }
+                res.status(customError_1.HttpCode.OK).json({
+                    success: true,
+                    data: {
+                        _id: user._id,
+                        email: user.email,
+                        fcmToken: user.fcmToken,
+                    },
+                    message: "FCM token updated successfully"
+                });
+            }
+            catch (error) {
+                console.error('Error updating FCM token:', error);
+                next((0, customError_1.createCustomError)("Failed to update FCM token", customError_1.HttpCode.INTERNAL_SERVER_ERROR));
             }
         }));
     }

@@ -29,6 +29,9 @@ router
     .route("/:id/permissions")
     .patch(auth_1.authenticateUser, user_controller_1.default.updatePermissions);
 router
+    .route("/:id/fcm-token")
+    .patch(auth_1.authenticateUser, user_controller_1.default.updateFcmToken);
+router
     .route("/swap-member/:userId")
     .patch(auth_1.authenticateUser, (0, auth_1.authorizePermission)("مستخدم", "update"), user_controller_1.default.swapMember);
 exports.default = router;
